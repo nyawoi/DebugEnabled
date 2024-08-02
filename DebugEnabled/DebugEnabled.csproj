@@ -1,0 +1,128 @@
+<!--
+    Zumbi Blocks 2 Plugin Project
+
+    This template comes pre-configured with sensible defaults,
+    and can be customized by editing the DebugEnabled.csproj.user file
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- Assembly Information -->
+    <PropertyGroup>
+        <!-- Change these values with your own -->
+        <AssemblyName>DebugEnabled</AssemblyName>
+        <RootNamespace>AetharNet.Mods.ZumbiBlocks2.DebugEnabled</RootNamespace>
+        <AssemblyVersion>0.1.0</AssemblyVersion>
+        <!-- Know what you're doing and need more customization? Here you go! -->
+        <LangVersion>10</LangVersion>
+        <TargetFramework>net481</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <RestoreAdditionalProjectSources>
+            https://api.nuget.org/v3/index.json;
+            https://nuget.bepinex.dev/v3/index.json
+        </RestoreAdditionalProjectSources>
+    </PropertyGroup>
+
+
+    <!-- Import Template Configuration -->
+    <ItemGroup>
+        <Content Include="DebugEnabled.csproj.user"/>
+    </ItemGroup>
+
+    <!-- Automatic Fallback Values -->
+    <PropertyGroup>
+        <!-- Default Steam install location -->
+        <DefaultSteamDir>C:\Program Files (x86)\Steam\steamapps\common\Zumbi Blocks 2 Open Alpha</DefaultSteamDir>
+        <!-- If no custom install location has been set, fallback to default Steam install location -->
+        <ZumbiBlocks2_Location
+            Condition="('$(ZumbiBlocks2_Location)' == '' Or !Exists('$(ZumbiBlocks2_Location)')) And Exists('$(DefaultSteamDir)')"
+        >$(DefaultSteamDir)
+        </ZumbiBlocks2_Location>
+        <!-- If the config file failed to load, disable everything -->
+        <Enable_Task_FileValidation Condition="'$(Enable_Task_FileValidation)' == ''">false</Enable_Task_FileValidation>
+        <Enable_Task_PluginInstall Condition="'$(Enable_Task_PluginInstall)' == ''">false</Enable_Task_PluginInstall>
+    </PropertyGroup>
+
+
+    <!-- Base references for all target frameworks -->
+    <ItemGroup>
+        <PackageReference Include="BepInEx.Core" Version="5.*" IncludeAssets="compile" PrivateAssets="all"/>
+        <PackageReference Include="UnityEngine.Modules" Version="2020.3.48" IncludeAssets="compile" PrivateAssets="all"/>
+    </ItemGroup>
+
+    <!-- Additional reference for the .NET Framework -->
+    <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
+        <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" IncludeAssets="compile" PrivateAssets="all"/>
+    </ItemGroup>
+
+    <!-- Project references -->
+    <ItemGroup>
+        <Reference Include="Assembly-CSharp.dll">
+            <HintPath>$(ZumbiBlocks2_Location)\ZumbiBlocks2_Data\Managed\Assembly-CSharp.dll</HintPath>
+        </Reference>
+        <Reference Include="Unity.TextMeshPro">
+          <HintPath>$(ZumbiBlocks2_Location)\ZumbiBlocks2_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+
+    <!-- Access assets in the assets folder -->
+    <ItemGroup Condition="Exists('$(ProjectDir)assets')">
+        <Folder Include="assets"/>
+        <ProjectAssets Include="$(ProjectDir)assets\**"/>
+    </ItemGroup>
+
+    <!-- Embed resources in the resources folder -->
+    <ItemGroup Condition="Exists('$(ProjectDir)resources')">
+        <Folder Include="resources"/>
+        <EmbeddedResource Include="$(ProjectDir)resources\**"/>
+    </ItemGroup>
+
+
+    <!-- Verify game directory exists with complete BepInEx installation (Enable_Task_FileValidation == true) -->
+    <Target
+        Condition="$(Enable_Task_FileValidation)"
+        Name="ValidateModLoaderInstallation"
+        BeforeTargets="Build"
+    >
+        <!-- If the ZumbiBlocks2_Location property has not been set, throw an error -->
+        <Error
+            Condition="'$(ZumbiBlocks2_Location)' == ''"
+            Text="Please specify your Zumbi Blocks 2 installation directory."
+        />
+        <!-- If the ZumbiBlocks2_Location directory does not exist, throw an error -->
+        <Error
+            Condition="!Exists('$(ZumbiBlocks2_Location)')"
+            Text="Could not locate Zumbi Blocks 2 installation directory. Please check your ZumbiBlocks2_Location property and try again."
+        />
+        <!-- If the BepInEx directory is missing, throw an error -->
+        <Error
+            Condition="!Exists('$(ZumbiBlocks2_Location)\BepInEx')"
+            Text="Could not locate BepInEx installation. Please download BepInEx from its repository: https://github.com/BepInEx/BepInEx/releases"
+        />
+        <!-- If the BepInEx core assembly is missing, throw an error -->
+        <Error
+            Condition="!Exists('$(ZumbiBlocks2_Location)\BepInEx\core\BepInEx.dll')"
+            Text="BepInEx installation is corrupted. Please re-download BepInEx from its repository: https://github.com/BepInEx/BepInEx/releases"
+        />
+    </Target>
+
+    <!-- Automatically deploy to the plugins directory after building assembly (Enable_Task_PluginInstall == true) -->
+    <Target
+        Condition="$(Enable_Task_PluginInstall)"
+        Name="DeployToPluginsDirectory"
+        AfterTargets="Build"
+    >
+        <!-- Copy newly-built assembly to BepInEx plugins directory -->
+        <Copy
+            SourceFiles="$(TargetDir)$(AssemblyName).dll"
+            DestinationFolder="$(ZumbiBlocks2_Location)\BepInEx\plugins\$(AssemblyName)"
+        />
+        <!-- Copy project assets to plugin's assets directory -->
+        <Copy
+            Condition="Exists('$(ProjectDir)assets')"
+            SourceFiles="@(ProjectAssets)"
+            DestinationFolder="$(ZumbiBlocks2_Location)\BepInEx\plugins\$(AssemblyName)\assets\%(RecursiveDir)"
+            SkipUnchangedFiles="true"
+        />
+    </Target>
+
+</Project>

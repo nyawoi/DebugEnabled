@@ -1,0 +1,19 @@
+# Output Directories
+[Bb]in
+[Oo]bj
+[Dd]ebug
+[Rr]elease
+
+# Project Dependencies
+[Pp]ackages
+
+# User Configuration
+*.user
+
+# Editor Configuration
+.vs
+.vscode
+.idea
+
+# Template Configuration
+.template.config
